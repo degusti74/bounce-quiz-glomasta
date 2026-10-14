@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BounceQuiz AI - Sosiologi XII</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark: #1f2937;
+            --light: #f3f4f6;
+            --white: #ffffff;
+            --ball-color: #3b82f6;
+            --ball-hover: #2563eb;
+            --ball-disabled: #9ca3af;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--light);
+            color: var(--dark);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary), #818cf8);
+            color: var(--white);
+            padding: 1rem 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .title-area h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .title-area p {
+            font-size: 0.875rem;
+            opacity: 0.9;
+        }
+
+        .stats-area {
+            display: flex;
+            gap: 1.5rem;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            backdrop-filter: blur(4px);
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+        }
+
+        main {
+            flex: 1;
+            position: relative;
+            width: 100%;
+            background-color: #e5e7eb;
+            overflow: hidden;
+        }
+
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: var(--white);
+            border-radius: 1rem;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #f8fafc;
+            border-top-left-radius: 1rem;
+            border-top-right-radius: 1rem;
+        }
+
+        .modal-header h2 {
+            font-size: 1.25rem;
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        .modal-badge {
+            background: var(--primary);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .question-text {
+            font-size: 1.125rem;
+            line-height: 1.6;
+            color: var(--dark);
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+        }
+
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .option-btn {
+            padding: 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.5rem;
+            background: transparent;
+            text-align: left;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            border-color: var(--primary);
+            background-color: #eff6ff;
+        }
+
+        .option-prefix {
+            font-weight: 700;
+            color: #6b7280;
+            min-width: 1.5rem;
+        }
+
+        .option-btn:hover:not(:disabled) .option-prefix {
+            color: var(--primary);
+        }
+
+        .option-btn.correct {
+            background-color: #d1fae5;
+            border-color: var(--secondary);
+            color: #065f46;
+        }
+        
+        .option-btn.correct .option-prefix { color: #059669; }
+
+        .option-btn.wrong {
+            background-color: #fee2e2;
+            border-color: var(--danger);
+            color: #991b1b;
+        }
+        
+        .option-btn.wrong .option-prefix { color: #dc2626; }
+
+        .option-btn:disabled {
+            cursor: default;
+            opacity: 0.7;
+        }
+
+        .feedback-area {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .feedback-area.active {
+            display: block;
+        }
+
+        .feedback-title {
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .feedback-text {
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .feedback-area.success {
+            background-color: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .feedback-area.error {
+            background-color: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+        
+        .feedback-area.info {
+            background-color: #e0f2fe;
+            color: #075985;
+            border: 1px solid #bae6fd;
+        }
+
+        .oral-controls {
+            margin-top: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .rubric-box {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .rubric-box h4 {
+            color: #475569;
+            margin-bottom: 0.5rem;
+        }
+
+        .rubric-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .rubric-btn {
+            flex: 1;
+            min-width: 120px;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 0.375rem;
+            font-weight: 600;
+            cursor: pointer;
+            color: white;
+            transition: opacity 0.2s;
+        }
+
+        .rubric-btn:hover { opacity: 0.9; }
+        .rubric-btn.perfect { background-color: var(--secondary); }
+        .rubric-btn.partial { background-color: var(--warning); }
+        .rubric-btn.wrong { background-color: var(--danger); }
+        .rubric-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: flex-end;
+            background-color: #f8fafc;
+            border-bottom-left-radius: 1rem;
+            border-bottom-right-radius: 1rem;
+        }
+
+        .btn-continue {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.375rem;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: none;
+        }
+
+        .btn-continue:hover {
+            background-color: var(--primary-hover);
+        }
+        
+        .btn-continue.active {
+            display: block;
+        }
+
+        .end-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(31, 41, 55, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+            color: white;
+        }
+
+        .end-screen.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .end-card {
+            background: var(--white);
+            color: var(--dark);
+            padding: 2.5rem;
+            border-radius: 1rem;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        .end-title {
+            font-size: 2rem;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+            font-weight: 800;
+        }
+
+        .end-subtitle {
+            color: #6b7280;
+            margin-bottom: 2rem;
+        }
+
+        .score-display {
+            font-size: 4rem;
+            font-weight: 800;
+            color: var(--secondary);
+            line-height: 1;
+            margin-bottom: 1.5rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+            text-align: left;
+        }
+
+        .stat-box {
+            background: #f3f4f6;
+            padding: 1rem;
+            border-radius: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--dark);
+        }
+
+        .btn-restart {
+            width: 100%;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-size: 1.125rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn-restart:hover {
+            background: var(--primary-hover);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 640px) {
+            .header-content { flex-direction: column; gap: 1rem; text-align: center; }
+            .stats-area { width: 100%; justify-content: center; }
+            .modal-content { width: 95%; padding: 0; }
+            .option-btn { padding: 0.75rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-content">
+            <div class="title-area">
+                <h1>BounceQuiz AI</h1>
+                <p>Sosiologi - Globalisasi dan Masyarakat Digital | Kelas XII SMA</p>
+            </div>
+            <div class="stats-area">
+                <div class="stat-item">
+                    <span>Terjawab:</span>
+                    <span id="progressText">0 / 36</span>
+                </div>
+                <div class="stat-item">
+                    <span>Skor Benar:</span>
+                    <span id="scoreText">0</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <canvas id="gameCanvas"></canvas>
+    </main>
+
+    <!-- Modal Soal -->
+    <div id="questionModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Soal <span id="modalBallNumber">#</span></h2>
+                <span id="modalTypeBadge" class="modal-badge">Multiple Choice</span>
+            </div>
+            <div class="modal-body">
+                <div id="questionText" class="question-text"></div>
+                
+                <!-- Container untuk Pilihan Ganda -->
+                <div id="mcOptions" class="options-container">
+                    <!-- Tombol opsi di-generate via JS -->
+                </div>
+
+                <!-- Container untuk Pertanyaan Terbuka / Lisan -->
+                <div id="oralContainer" class="oral-controls" style="display: none;">
+                    <div class="rubric-box">
+                        <h4>Indikator Jawaban (Hanya untuk Guru):</h4>
+                        <p id="oralIndicator" style="font-weight: 500;"></p>
+                    </div>
+                    <div class="rubric-buttons">
+                        <button class="rubric-btn perfect" onclick="gradeOral(100)">Benar / Sangat Tepat<br><small>(+100)</small></button>
+                        <button class="rubric-btn partial" onclick="gradeOral(50)">Sebagian Benar<br><small>(+50)</small></button>
+                        <button class="rubric-btn wrong" onclick="gradeOral(0)">Salah / Belum Tepat<br><small>(+0)</small></button>
+                    </div>
+                </div>
+
+                <!-- Area Feedback dan Pembahasan -->
+                <div id="feedbackArea" class="feedback-area">
+                    <div id="feedbackTitle" class="feedback-title"></div>
+                    <div id="feedbackText" class="feedback-text"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="btnContinue" class="btn-continue" onclick="closeModal()">Lanjut Permainan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Layar Akhir -->
+    <div id="endScreen" class="end-screen">
+        <div class="end-card">
+            <h2 class="end-title">BounceQuiz Selesai!</h2>
+            <p class="end-subtitle">Evaluasi Pembelajaran Sosiologi Kelas XII</p>
+            
+            <div class="score-display" id="finalTotalScore">0</div>
+            
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-label">Total Soal</div>
+                    <div class="stat-value">36</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Rata-rata Nilai</div>
+                    <div class="stat-value" id="finalAverage">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Jawaban Tepat (100)</div>
+                    <div class="stat-value" id="finalCorrect">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Jawaban Kurang Tepat</div>
+                    <div class="stat-value" id="finalWrong">0</div>
+                </div>
+            </div>
+            
+            <button class="btn-restart" onclick="initGame()">Main Lagi</button>
+        </div>
+    </div>
+
+    <script>
+        // Array Data Soal Lengkap (36 Soal) - Campuran 25 MC dan 11 Oral
+        const questionsData = [
+            // 1-5: Konsep Dasar Globalisasi & Transformasi (MC)
+            {
+                type: 'mc',
+                question: "Seorang petani di desa kini dapat menjual hasil panennya langsung ke konsumen di kota menggunakan aplikasi smartphone tanpa perantara. Fenomena ini dalam kajian sosiologi menunjukkan dampak positif dari globalisasi di bidang...",
+                options: [
+                    "A. Budaya, karena mengubah cara petani berpakaian",
+                    "B. Politik, karena petani memiliki daya tawar hukum",
+                    "C. Ekonomi, karena terciptanya efisiensi pasar melalui teknologi digital",
+                    "D. Sosial, karena petani menjadi lebih individualis",
+                    "E. Pendidikan, karena petani harus sekolah IT terlebih dahulu"
+                ],
+                answer: 2, // C
+                explanation: "Penggunaan aplikasi memotong rantai distribusi, yang merupakan transformasi ekonomi digital yang menciptakan efisiensi pasar."
+            },
+            {
+                type: 'mc',
+                question: "Masyarakat saat ini cenderung lebih menyukai berbelanja di e-commerce daripada pasar tradisional karena alasan kepraktisan dan promo. Jika tidak dikendalikan, kemudahan akses ini berpotensi memunculkan masalah sosial berupa...",
+                options: [
+                    "A. Kesenjangan digital yang semakin sempit",
+                    "B. Konsumerisme, di mana individu membeli barang bukan berdasarkan kebutuhan dasar",
+                    "C. Meningkatnya solidaritas mekanik",
+                    "D. Hilangnya kebudayaan lokal secara total",
+                    "E. Peningkatan tabungan masyarakat secara signifikan"
+                ],
+                answer: 1, // B
+                explanation: "Kemudahan belanja online seringkali memicu gaya hidup konsumtif, di mana hasrat (wants) mengalahkan kebutuhan (needs)."
+            },
+            {
+                type: 'mc',
+                question: "Banyak remaja Indonesia yang mengadopsi gaya berpakaian, musik, bahkan bahasa gaul dari artis K-Pop. Proses penyerapan budaya asing tanpa menghilangkan unsur kebudayaan lokal yang masih dipertahankan secara bersamaan disebut...",
+                options: [
+                    "A. Asimilasi",
+                    "B. Amalgamasi",
+                    "C. Difusi",
+                    "D. Akulturasi",
+                    "E. Invasi"
+                ],
+                answer: 3, // D
+                explanation: "Akulturasi adalah percampuran dua kebudayaan atau lebih di mana unsur kebudayaan asli masih tampak."
+            },
+            {
+                type: 'oral',
+                question: "Jelaskan dengan bahasa Anda sendiri, apa yang dimaksud dengan 'Kesenjangan Digital' (Digital Divide) di Indonesia dan berikan satu contoh konkret yang terjadi selama masa pembelajaran jarak jauh (PJJ) akibat pandemi lalu!",
+                indicator: "Menyebutkan ketidaksetaraan akses teknologi/internet (infrastruktur/ekonomi) DAN memberikan contoh nyata seperti siswa di pelosok kesulitan sinyal/tidak punya gadget dibanding siswa kota.",
+                explanation: "Kesenjangan digital merujuk pada jarak antara mereka yang memiliki akses dan kemampuan menggunakan teknologi informasi dengan mereka yang tidak."
+            },
+            {
+                type: 'mc',
+                question: "Perusahaan multinasional seperti restoran cepat saji asal Amerika menyesuaikan menu mereka di Indonesia dengan menambahkan nasi dan sambal. Strategi ini merupakan contoh dari...",
+                options: [
+                    "A. Westernisasi murni",
+                    "B. Modernisasi tertutup",
+                    "C. Glokalisasi (Global-Lokal)",
+                    "D. Imperialisme budaya",
+                    "E. Neokolonialisme ekonomi"
+                ],
+                answer: 2, // C
+                explanation: "Glokalisasi adalah adaptasi produk global dengan karakteristik budaya lokal setempat agar lebih diterima masyarakat."
+            },
+            // 6-10: Masyarakat Digital & Identitas
+            {
+                type: 'mc',
+                question: "Dalam masyarakat digital, interaksi sosial sering terjadi melalui media sosial. Seseorang yang di dunia nyata pendiam namun di media sosial sangat vokal dan agresif menunjukkan fenomena...",
+                options: [
+                    "A. Pembentukan anonimitas yang aman",
+                    "B. Pergeseran identitas digital (digital identity) yang berbeda dari identitas fisik",
+                    "C. Peningkatan kecerdasan emosional",
+                    "D. Solidaritas organik yang kuat",
+                    "E. Homogenisasi budaya masyarakat"
+                ],
+                answer: 1, // B
+                explanation: "Ruang siber memungkinkan seseorang membangun identitas alter (identitas digital) yang bisa sangat berbeda dari karakter aslinya di dunia nyata."
+            },
+            {
+                type: 'oral',
+                question: "Menurut Anda, bagaimana media sosial (seperti Instagram atau TikTok) dapat memengaruhi standar kecantikan atau kesuksesan di kalangan remaja? Berikan analisis sosiologisnya.",
+                indicator: "Menjelaskan konsep konstruksi sosial, di mana filter, editan, atau gaya hidup pamer ('flexing') menciptakan standar ideal yang semu, memicu 'insecurity' atau tekanan sosial pada remaja.",
+                explanation: "Media sosial menciptakan realitas hiper (hyper-reality) yang merekonstruksi standar sosial baru yang seringkali tidak realistis."
+            },
+            {
+                type: 'mc',
+                question: "Kebebasan berpendapat di internet sering disalahgunakan dengan menyebarkan berita bohong (hoaks) yang dapat memicu konflik SARA di dunia nyata. Hal ini menunjukkan bahwa masyarakat digital menghadapi tantangan berat dalam hal...",
+                options: [
+                    "A. Kecepatan akses internet",
+                    "B. Infrastruktur perangkat keras",
+                    "C. Etika siber (cyber ethics) dan literasi digital",
+                    "D. Monopoli perusahaan teknologi",
+                    "E. Hukum internasional"
+                ],
+                answer: 2, // C
+                explanation: "Literasi digital dan etika siber sangat krusial untuk menyaring informasi dan berperilaku sopan di dunia maya, mencegah disinformasi."
+            },
+            {
+                type: 'mc',
+                question: "Munculnya profesi baru seperti Content Creator, Youtuber, dan Social Media Specialist merupakan bukti nyata dari...",
+                options: [
+                    "A. Disrupsi teknologi yang menghancurkan lapangan kerja",
+                    "B. Transformasi struktur sosial dan diversifikasi pekerjaan di era digital",
+                    "C. Kegagalan sistem pendidikan formal",
+                    "D. Kemunduran sektor industri manufaktur",
+                    "E. Kapitalisme yang semakin eksploitatif"
+                ],
+                answer: 1, // B
+                explanation: "Era digital tidak hanya menghilangkan pekerjaan lama, tetapi menciptakan profesi-profesi baru (transformasi struktur pekerjaan)."
+            },
+            {
+                type: 'mc',
+                question: "Banyak orang merasa cemas atau takut ketinggalan tren informasi terbaru di media sosial, sehingga mereka terus-menerus mengecek ponsel mereka. Fenomena psikososial ini dikenal dengan istilah...",
+                options: [
+                    "A. Cyberbullying",
+                    "B. Phishing",
+                    "C. FOMO (Fear Of Missing Out)",
+                    "D. Echo Chamber",
+                    "E. Gaslighting"
+                ],
+                answer: 2, // C
+                explanation: "FOMO adalah kecemasan sosial akibat ketakutan tertinggal momen, informasi, atau tren yang sedang diikuti orang lain di ruang digital."
+            },
+            // 11-15: Dampak Sos-Bud
+            {
+                type: 'oral',
+                question: "Jelaskan apa yang dimaksud dengan 'Echo Chamber' (Ruang Gema) di media sosial dan mengapa hal tersebut dapat berbahaya bagi integrasi bangsa!",
+                indicator: "Menjelaskan algoritma medsos yang hanya menyajikan informasi yang disukai pengguna, membuat mereka terkurung dalam pandangan yang sama, menolak pendapat berbeda, sehingga memicu polarisasi/perpecahan.",
+                explanation: "Echo chamber membuat individu sulit menerima perspektif luar, memperkuat bias konfirmasi, dan merusak dialog antar kelompok yang berbeda."
+            },
+            {
+                type: 'mc',
+                question: "Modernisasi dan globalisasi seringkali disamakan dengan Westernisasi. Perbedaan mendasar yang membuat suatu masyarakat disebut mengalami modernisasi (bukan westernisasi) adalah...",
+                options: [
+                    "A. Mengadopsi seluruh gaya hidup Barat secara mutlak",
+                    "B. Fokus pada penggunaan rasionalitas, efisiensi, dan teknologi terlepas dari asal usulnya",
+                    "C. Menolak masuknya investasi asing",
+                    "D. Mempertahankan nilai feodal dalam sistem pemerintahan",
+                    "E. Menggunakan bahasa Inggris sebagai bahasa ibu"
+                ],
+                answer: 1, // B
+                explanation: "Modernisasi adalah perubahan menuju masyarakat yang rasional dan efisien. Westernisasi adalah peniruan gaya hidup Barat. Keduanya berbeda fokus."
+            },
+            {
+                type: 'mc',
+                question: "Tindakan perundungan yang dilakukan melalui media sosial, seperti mengirim pesan ancaman, mempermalukan, atau menyebarkan foto pribadi seseorang tanpa izin disebut...",
+                options: [
+                    "A. Cyber fraud",
+                    "B. Cyber espionage",
+                    "C. Cyberbullying",
+                    "D. Hacking",
+                    "E. Carding"
+                ],
+                answer: 2, // C
+                explanation: "Cyberbullying adalah bentuk agresi atau perundungan berulang yang dilakukan menggunakan media digital."
+            },
+            {
+                type: 'mc',
+                question: "Dalam masyarakat jejaring (network society) menurut Manuel Castells, elemen dasar yang menjadi penentu kekuasaan dan produktivitas adalah...",
+                options: [
+                    "A. Kepemilikan tanah dan modal fisik",
+                    "B. Penguasaan informasi dan pengetahuan berbasis jaringan elektronik",
+                    "C. Kekuatan militer yang besar",
+                    "D. Sistem kekerabatan yang luas",
+                    "E. Jumlah populasi suatu negara"
+                ],
+                answer: 1, // B
+                explanation: "Castells menekankan bahwa informasi, pengetahuan, dan akses ke jaringan (network) adalah sumber kekuasaan utama di era digital."
+            },
+            {
+                type: 'oral',
+                question: "Berikan satu contoh tradisi atau kearifan lokal di daerah Anda yang berhasil dilestarikan dan dipromosikan ke tingkat global berkat adanya teknologi digital!",
+                indicator: "Menyebutkan contoh spesifik (misal: membatik, tarian adat, kuliner tradisional, desa wisata) yang dipromosikan lewat YouTube/Instagram/Website sehingga dikenal turis mancanegara.",
+                explanation: "Teknologi digital tidak selalu merusak budaya lokal, tetapi bisa menjadi alat ampuh untuk pelestarian (preservasi) dan diplomasi budaya."
+            },
+            // 16-20: C3-C5 Analisis Kasus
+            {
+                type: 'mc',
+                question: "Hadirnya ojek online memicu konflik dengan ojek pangkalan pada masa awal kemunculannya. Dari perspektif sosiologi, konflik ini terjadi terutama karena...",
+                options: [
+                    "A. Perbedaan latar belakang etnis antara pengemudi",
+                    "B. Benturan antara sistem tradisional dan disrupsi inovasi teknologi (keterlambatan adaptasi)",
+                    "C. Kegagalan pemerintah membangun jalan raya",
+                    "D. Ojek pangkalan menolak menggunakan uang tunai",
+                    "E. Kurangnya minat masyarakat terhadap transportasi umum"
+                ],
+                answer: 1, // B
+                explanation: "Disrupsi teknologi sering menimbulkan culture lag (ketertinggalan budaya/sistem lama) yang belum siap menghadapi perubahan sistem baru, memicu konflik transisi."
+            },
+            {
+                type: 'mc',
+                question: "Globalisasi mempermudah mobilitas manusia, barang, dan jasa lintas negara. Hal ini berimbas pada terbentuknya masyarakat kota besar yang sangat heterogen. Dampak sosiologis dari kondisi ini adalah...",
+                options: [
+                    "A. Menurunnya tingkat toleransi",
+                    "B. Munculnya masyarakat multikultural yang menuntut sikap pluralisme",
+                    "C. Kembalinya sistem kasta",
+                    "D. Terhapusnya sistem kelas sosial secara absolut",
+                    "E. Menguatnya ikatan kekerabatan tradisional"
+                ],
+                answer: 1, // B
+                explanation: "Heterogenitas memaksa masyarakat untuk belajar hidup berdampingan dalam perbedaan (multikulturalisme) dan mengembangkan sikap toleran (pluralisme)."
+            },
+            {
+                type: 'oral',
+                question: "Bagaimana cara masyarakat, khususnya generasi muda (Gen Z), menyikapi arus globalisasi agar tidak kehilangan identitas nasional (Jati diri bangsa)?",
+                indicator: "Menyebutkan sikap selektif, menguatkan literasi budaya lokal/Pancasila, tetap bangga produk dalam negeri, dan menggunakan teknologi untuk hal positif tanpa meniru budaya asing secara membabi-buta.",
+                explanation: "Sikap selektif dan filtrasi budaya (cultural filter) dengan nilai-nilai Pancasila sangat penting agar bisa maju secara global namun tetap berakar lokal."
+            },
+            {
+                type: 'mc',
+                question: "Fenomena 'Cancel Culture' (Budaya Batal/Boikot massal di internet) terhadap seorang figur publik yang dianggap melakukan kesalahan, menunjukkan bahwa media sosial berfungsi sebagai...",
+                options: [
+                    "A. Alat kontrol sosial (social control) yang sangat kuat, namun seringkali tanpa proses peradilan formal",
+                    "B. Sarana hiburan semata",
+                    "C. Peningkat solidaritas mekanik",
+                    "D. Penurun tingkat kriminalitas",
+                    "E. Media pendidikan karakter"
+                ],
+                answer: 0, // A
+                explanation: "Cancel culture adalah bentuk sanksi sosial modern (kontrol sosial informal) di dunia maya oleh massa/netizen, yang dampaknya bisa sangat merusak reputasi."
+            },
+            {
+                type: 'mc',
+                question: "Perdagangan bebas (Free Trade) yang didorong oleh globalisasi membuat barang impor murah membanjiri pasar domestik. Ancaman sosial-ekonomi bagi masyarakat lokal adalah...",
+                options: [
+                    "A. Terjadinya transfer teknologi secara merata",
+                    "B. Matinya industri kecil menengah (UMKM) lokal yang kalah bersaing harga",
+                    "C. Meningkatnya kualitas pendidikan",
+                    "D. Hilangnya bahasa daerah",
+                    "E. Penurunan angka kriminalitas"
+                ],
+                answer: 1, // B
+                explanation: "Kelemahan pasar bebas bagi negara berkembang adalah kerentanan UMKM lokal jika tidak diproteksi atau diberdayakan untuk bersaing."
+            },
+            // 21-25: Etika & Tantangan Global
+            {
+                type: 'oral',
+                question: "Banyak kasus pinjaman online (Pinjol) ilegal yang meneror masyarakat hingga menyebabkan korban depresi. Analisislah mengapa masyarakat mudah terjerat fenomena ini di era digital!",
+                indicator: "Menyebutkan faktor desakan ekonomi, budaya konsumtif yang tinggi, kemudahan syarat (tanpa agunan), DAN rendahnya literasi keuangan/digital masyarakat.",
+                explanation: "Kesenjangan antara kemudahan teknologi finansial dan rendahnya literasi finansial masyarakat menjadi celah bagi eksploitasi berkedok pinjaman."
+            },
+            {
+                type: 'mc',
+                question: "Konsep 'Global Village' (Desa Global) yang digagas oleh Marshall McLuhan mengacu pada...",
+                options: [
+                    "A. Program pembangunan desa terpencil di seluruh dunia",
+                    "B. Kondisi dunia yang seolah tanpa batas, saling terhubung dengan cepat berkat teknologi komunikasi",
+                    "C. Penggabungan seluruh negara menjadi satu negara tunggal",
+                    "D. Kembalinya masyarakat kota ke kehidupan desa tradisional",
+                    "E. Pertanian global yang dimonopoli korporasi"
+                ],
+                answer: 1, // B
+                explanation: "Global Village menggambarkan bagaimana teknologi media massa/internet mengecilkan ruang dan waktu, membuat dunia terasa seperti satu desa kecil."
+            },
+            {
+                type: 'mc',
+                question: "Seorang aktivis lingkungan di Indonesia menggalang dana melalui platform crowdfunding digital dan mendapat sumbangan dari berbagai negara untuk menanam mangrove. Ini adalah contoh pengaruh globalisasi yang menciptakan...",
+                options: [
+                    "A. Imperialisme ekologi",
+                    "B. Gerakan sosial lintas negara (transnational social movement) yang positif",
+                    "C. Westernisasi lingkungan",
+                    "D. Hedonisme",
+                    "E. Culture shock"
+                ],
+                answer: 1, // B
+                explanation: "Internet memfasilitasi solidaritas global untuk isu-isu kemanusiaan dan lingkungan tanpa terhalang batas negara."
+            },
+            {
+                type: 'mc',
+                question: "Di era digital, data pribadi (seperti riwayat pencarian, lokasi, preferensi belanja) sering dikumpulkan oleh perusahaan teknologi besar untuk target iklan. Fenomena ini oleh para sosiolog sering dikritisi sebagai...",
+                options: [
+                    "A. Kapitalisme pengawasan (Surveillance Capitalism)",
+                    "B. Demokrasi digital",
+                    "C. Solidaritas mekanik digital",
+                    "D. Revolusi industri hijau",
+                    "E. Sosialisasi primer"
+                ],
+                answer: 0, // A
+                explanation: "Surveillance Capitalism adalah komodifikasi data pribadi pengguna oleh perusahaan teknologi untuk meraup keuntungan ekonomi."
+            },
+            {
+                type: 'oral',
+                question: "Menurut pendapat Anda, apakah artificial intelligence (AI) akan memperlebar kesenjangan sosial di masa depan, atau justru mempersempitnya? Berikan argumen logis Anda.",
+                indicator: "Bisa berargumen memperlebar (karena hilangnya pekerjaan buruh dan dikuasainya AI oleh pemilik modal) ATAU mempersempit (karena efisiensi akses edukasi/kesehatan murah). Harus logis.",
+                explanation: "AI bermata dua. Ia bisa mendemokratisasi akses pengetahuan, namun jika kepemilikannya terpusat, ia bisa mematikan sektor pekerjaan padat karya."
+            },
+            // 26-30: Mix Theory & Practice
+            {
+                type: 'mc',
+                question: "Kecenderungan masyarakat perkotaan yang lebih mementingkan kepentingan diri sendiri dan keluarga inti, serta kurang mengenal tetangganya merupakan dampak negatif modernisasi berupa...",
+                options: [
+                    "A. Sekularisme",
+                    "B. Hedonisme",
+                    "C. Individualisme",
+                    "D. Pragmatisme",
+                    "E. Materialisme"
+                ],
+                answer: 2, // C
+                explanation: "Individualisme adalah sikap mementingkan diri sendiri dan memudarnya ikatan kolektif atau gotong royong dengan lingkungan sekitar."
+            },
+            {
+                type: 'mc',
+                question: "Perubahan sosial akibat revolusi digital berjalan sangat cepat. William F. Ogburn menyebut ketertinggalan unsur budaya non-material (seperti norma, hukum) dibandingkan budaya material (teknologi) sebagai...",
+                options: [
+                    "A. Cultural shock (Kejutan budaya)",
+                    "B. Cultural animosity (Kebencian budaya)",
+                    "C. Cultural lag (Ketertinggalan budaya)",
+                    "D. Cultural diffusion (Difusi budaya)",
+                    "E. Cultural relativism"
+                ],
+                answer: 2, // C
+                explanation: "Cultural lag terjadi ketika teknologi (misal internet) berkembang pesat, namun aturan hukum (UU ITE) atau etika masyarakatnya tertinggal meresponsnya."
+            },
+            {
+                type: 'oral',
+                question: "Jelaskan perbedaan mendasar antara 'Modernisasi' dan 'Westernisasi' dengan memberikan masing-masing satu contoh yang nyata di lingkungan sekitar Anda!",
+                indicator: "Modernisasi: perubahan rasional/efisien (Contoh: pakai traktor/komputer). Westernisasi: meniru gaya hidup Barat tanpa filter (Contoh: budaya Halloween/pergaulan bebas).",
+                explanation: "Modernisasi lebih kepada fungsi dan efisiensi, sedangkan westernisasi lebih kepada gaya hidup."
+            },
+            {
+                type: 'mc',
+                question: "Kemampuan untuk menemukan, mengevaluasi, membuat, dan mengomunikasikan informasi secara bijak menggunakan teknologi informasi dikenal sebagai...",
+                options: [
+                    "A. Digital divide",
+                    "B. Digital citizenship",
+                    "C. Digital literacy (Literasi Digital)",
+                    "D. Digital footprint",
+                    "E. Cyber crime"
+                ],
+                answer: 2, // C
+                explanation: "Literasi digital bukan sekadar bisa memencet tombol, melainkan kemampuan berpikir kritis dalam mengolah dan merespons informasi digital."
+            },
+            {
+                type: 'mc',
+                question: "Istilah 'Netizen' (Network Citizen) merujuk pada...",
+                options: [
+                    "A. Orang yang menolak penggunaan internet",
+                    "B. Peretas yang merusak sistem jaringan",
+                    "C. Penduduk yang secara aktif terlibat dalam komunitas maya/internet",
+                    "D. Perusahaan penyedia jasa layanan internet (ISP)",
+                    "E. Program komputer otomatis (Bot)"
+                ],
+                answer: 2, // C
+                explanation: "Netizen adalah warga internet; individu yang secara aktif berinteraksi, beropini, dan membentuk komunitas di dunia maya."
+            },
+            // 31-36: Final Evaluation
+            {
+                type: 'oral',
+                question: "Sebutkan minimal 2 (dua) jejak digital (digital footprint) pasif yang tanpa sadar sering ditinggalkan pengguna internet, dan jelaskan mengapa jejak digital ini bisa berbahaya!",
+                indicator: "Menyebutkan riwayat pencarian (search history), lokasi GPS, atau data cookies. Bahayanya: privasi bocor, bisa dimanfaatkan untuk profiling, penipuan, atau pencurian identitas.",
+                explanation: "Jejak digital sangat sulit dihapus dan bisa menjadi sumber informasi bagi pihak tidak bertanggung jawab (doxxing)."
+            },
+            {
+                type: 'mc',
+                question: "Banyak masyarakat menggunakan aplikasi navigasi (seperti Google Maps) untuk mencari rute tercepat. Meskipun membantu, terkadang aplikasi ini mengarahkan ke jalan sempit hingga mobil tersangkut. Secara sosiologis, ini menunjukkan...",
+                options: [
+                    "A. Ketergantungan berlebihan masyarakat pada algoritma teknologi tanpa menggunakan penalaran lokal",
+                    "B. Keberhasilan total teknologi pemetaan",
+                    "C. Kurangnya kemampuan menyetir masyarakat",
+                    "D. Solidaritas warga sekitar yang tinggi",
+                    "E. Kesalahan murni pemerintah daerah"
+                ],
+                answer: 0, // A
+                explanation: "Ketergantungan pada teknologi dapat mematikan insting, interaksi sosial (bertanya pada warga), dan akal sehat (common sense)."
+            },
+            {
+                type: 'mc',
+                question: "Gerakan '#MeToo' berawal dari internet dan menyebar ke seluruh dunia untuk menentang pelecehan seksual. Hal ini membuktikan bahwa globalisasi informasi dapat...",
+                options: [
+                    "A. Menghancurkan moralitas bangsa",
+                    "B. Memicu kesadaran kolektif global untuk keadilan sosial dan HAM",
+                    "C. Melemahkan hukum positif di suatu negara",
+                    "D. Mendorong westernisasi tanpa batas",
+                    "E. Menciptakan kesenjangan ekonomi baru"
+                ],
+                answer: 1, // B
+                explanation: "Globalisasi tidak selalu buruk. Ia memfasilitasi gerakan sosial yang positif dan meningkatkan standar kesadaran global akan Hak Asasi Manusia."
+            },
+            {
+                type: 'oral',
+                question: "Di era digital saat ini, masyarakat seringkali mengalami 'Culture Shock' (Gegar Budaya). Berikan analisis mengapa gegar budaya ini bisa terjadi meski seseorang tidak bepergian ke luar negeri!",
+                indicator: "Menjelaskan bahwa internet membawa masuk kebudayaan asing (film, ideologi, tren) langsung ke kamar/ruang pribadi, membuat individu yang belum siap secara mental mengalami kebingungan atau benturan nilai.",
+                explanation: "Gegar budaya tidak lagi membutuhkan perpindahan fisik; perpindahan aliran informasi digital yang masif sudah cukup untuk menyebabkannya."
+            },
+            {
+                type: 'mc',
+                question: "Dalam menghadapi tantangan globalisasi, sikap yang menunjukkan ketahanan budaya bangsa (national resilience) adalah...",
+                options: [
+                    "A. Menutup total akses internet ke luar negeri (isolasi)",
+                    "B. Menganggap budaya lokal kuno dan harus ditinggalkan",
+                    "C. Menginternalisasi nilai Pancasila dan menjadikannya filter terhadap pengaruh budaya asing",
+                    "D. Menggunakan produk impor untuk menunjukkan status sosial tinggi",
+                    "E. Membenci warga negara asing yang datang ke Indonesia (xenophobia)"
+                ],
+                answer: 2, // C
+                explanation: "Pancasila berfungsi sebagai saringan (filter) budaya, menyeleksi mana nilai global yang bermanfaat dan menolak yang merusak."
+            },
+            {
+                type: 'oral',
+                question: "Bayangkan Anda adalah seorang sosiolog. Apa solusi paling efektif yang bisa Anda tawarkan kepada pemerintah untuk mengatasi kecanduan gadget (gawai) pada anak usia sekolah dasar?",
+                indicator: "Menawarkan solusi komprehensif: regulasi dari orang tua (pembatasan waktu layar), penguatan aktivitas fisik/bermain di luar, edukasi literasi digital di sekolah, dan pemberian contoh yang baik dari orang dewasa.",
+                explanation: "Solusi masalah sosial harus melibatkan pendekatan dari institusi keluarga, pendidikan, dan regulasi pemerintah (struktural dan kultural)."
+            }
+        ];
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let balls = [];
+        let animationId;
+        const totalBalls = 36;
+        let answeredBalls = 0;
+        let totalScore = 0;
+        let currentActiveBall = null;
+        let correctAnswers = 0;
+        let wrongAnswers = 0;
+
+        // Resize Canvas function
+        function resizeCanvas() {
+            const mainRect = document.querySelector('main').getBoundingClientRect();
+            canvas.width = mainRect.width;
+            canvas.height = mainRect.height;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Ball {
+            constructor(id) {
+                this.id = id;
+                this.radius = Math.min(canvas.width, canvas.height) / 25; // Responsive radius
+                if(this.radius < 20) this.radius = 20; // Minimum size
+                
+                this.x = Math.random() * (canvas.width - this.radius * 2) + this.radius;
+                this.y = Math.random() * (canvas.height - this.radius * 2) + this.radius;
+                
+                // Random kecepatan
+                const speed = (Math.random() * 1.5) + 0.5;
+                const angle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+                
+                this.isAnswered = false;
+                this.isHovered = false;
+                this.color = `hsl(${(id * 10) % 360}, 70%, 50%)`; // Warna berbeda tiap bola
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.isHovered ? this.radius * 1.1 : this.radius, 0, Math.PI * 2);
+                
+                if (this.isAnswered) {
+                    ctx.fillStyle = '#9ca3af'; // Gray disabled
+                    ctx.shadowBlur = 0;
+                } else {
+                    ctx.fillStyle = this.color;
+                    ctx.shadowColor = this.color;
+                    ctx.shadowBlur = this.isHovered ? 15 : 5;
+                }
+                
+                ctx.fill();
+                ctx.closePath();
+
+                // Draw Number
+                ctx.fillStyle = '#ffffff';
+                ctx.shadowBlur = 0;
+                ctx.font = `bold ${this.radius * 0.8}px Inter`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                if (this.isAnswered) {
+                    // Strike through / Checkmark
+                    ctx.fillText('✓', this.x, this.y);
+                } else {
+                    ctx.fillText(this.id, this.x, this.y);
+                }
+            }
+
+            update() {
+                if (this.isAnswered) return; // Bola mati tidak bergerak banyak
+                
+                // Slow down when hovered
+                const speedMult = this.isHovered ? 0.2 : 1;
+
+                this.x += this.vx * speedMult;
+                this.y += this.vy * speedMult;
+
+                // Bounce off walls
+                if (this.x + this.radius > canvas.width || this.x - this.radius < 0) {
+                    this.vx = -this.vx;
+                    this.x = Math.max(this.radius, Math.min(this.x, canvas.width - this.radius));
+                }
+                if (this.y + this.radius > canvas.height || this.y - this.radius < 0) {
+                    this.vy = -this.vy;
+                    this.y = Math.max(this.radius, Math.min(this.y, canvas.height - this.radius));
+                }
+            }
+        }
+
+        function initGame() {
+            resizeCanvas();
+            balls = [];
+            answeredBalls = 0;
+            totalScore = 0;
+            correctAnswers = 0;
+            wrongAnswers = 0;
+            updateStats();
+            
+            // Hide End Screen
+            document.getElementById('endScreen').classList.remove('active');
+
+            // Acak urutan pertanyaan untuk dimapping ke bola 1-36
+            // Untuk memastikan data tetap sama dengan ID bola, kita biarkan berurutan sesuai array
+            
+            for (let i = 1; i <= totalBalls; i++) {
+                balls.push(new Ball(i));
+            }
+            
+            if (!animationId) {
+                gameLoop();
+            }
+        }
+
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Background Pattern subtle
+            ctx.fillStyle = 'rgba(255,255,255,0.05)';
+            for(let i=0; i<canvas.width; i+=40) {
+                ctx.fillRect(i, 0, 1, canvas.height);
+            }
+            for(let i=0; i<canvas.height; i+=40) {
+                ctx.fillRect(0, i, canvas.width, 1);
+            }
+
+            // Update and draw
+            balls.forEach(ball => {
+                ball.update();
+                ball.draw();
+            });
+            
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        // Mouse Interaksi
+        const mouse = { x: 0, y: 0 };
+        
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouse.x = e.clientX - rect.left;
+            mouse.y = e.clientY - rect.top;
+
+            let cursorChange = false;
+            balls.forEach(ball => {
+                if(ball.isAnswered) {
+                    ball.isHovered = false;
+                    return;
+                }
+                
+                const dx = mouse.x - ball.x;
+                const dy = mouse.y - ball.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist < ball.radius) {
+                    ball.isHovered = true;
+                    cursorChange = true;
+                } else {
+                    ball.isHovered = false;
+                }
+            });
+            
+            canvas.style.cursor = cursorChange ? 'pointer' : 'default';
+        });
+
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+
+            for (let i = 0; i < balls.length; i++) {
+                const ball = balls[i];
+                if(ball.isAnswered) continue;
+
+                const dx = clickX - ball.x;
+                const dy = clickY - ball.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < ball.radius) {
+                    openModal(ball);
+                    break;
+                }
+            }
+        });
+
+        function openModal(ball) {
+            currentActiveBall = ball;
+            const qData = questionsData[ball.id - 1];
+            
+            // Setup UI Modal
+            document.getElementById('modalBallNumber').textContent = ball.id;
+            document.getElementById('questionText').textContent = qData.question;
+            
+            const mcContainer = document.getElementById('mcOptions');
+            const oralContainer = document.getElementById('oralContainer');
+            const btnContinue = document.getElementById('btnContinue');
+            const feedbackArea = document.getElementById('feedbackArea');
+            
+            // Reset UI
+            feedbackArea.className = 'feedback-area';
+            btnContinue.classList.remove('active');
+            mcContainer.innerHTML = '';
+            
+            if (qData.type === 'mc') {
+                document.getElementById('modalTypeBadge').textContent = 'Pilihan Ganda';
+                document.getElementById('modalTypeBadge').style.backgroundColor = '#4f46e5';
+                mcContainer.style.display = 'flex';
+                oralContainer.style.display = 'none';
+                
+                const prefixes = ['A', 'B', 'C', 'D', 'E'];
+                qData.options.forEach((opt, index) => {
+                    // Extract prefix from text if exists, or generate clean text
+                    const optText = opt.replace(/^[A-E]\.\s*/, ''); 
+                    
+                    const btn = document.createElement('button');
+                    btn.className = 'option-btn';
+                    btn.innerHTML = `<span class="option-prefix">${prefixes[index]}.</span> <span>${optText}</span>`;
+                    btn.onclick = () => answerMC(index, btn, mcContainer.children, qData);
+                    mcContainer.appendChild(btn);
+                });
+            } else {
+                document.getElementById('modalTypeBadge').textContent = 'Oral Answer';
+                document.getElementById('modalTypeBadge').style.backgroundColor = '#f59e0b';
+                mcContainer.style.display = 'none';
+                oralContainer.style.display = 'flex';
+                document.getElementById('oralIndicator').textContent = qData.indicator;
+                
+                // Enable rubric buttons
+                const rubrics = document.querySelectorAll('.rubric-btn');
+                rubrics.forEach(b => b.disabled = false);
+            }
+
+            // Tampilkan Modal, Pause Game (optional, biarkan bola lain gerak lambat atau stop)
+            document.getElementById('questionModal').classList.add('active');
+        }
+
+        function answerMC(selectedIndex, selectedBtn, allBtns, qData) {
+            // Disable all buttons
+            Array.from(allBtns).forEach(btn => btn.disabled = true);
+            
+            const isCorrect = selectedIndex === qData.answer;
+            let points = 0;
+
+            if (isCorrect) {
+                selectedBtn.classList.add('correct');
+                points = 100;
+                correctAnswers++;
+                showFeedback(true, "Jawaban Tepat!", qData.explanation, points);
+            } else {
+                selectedBtn.classList.add('wrong');
+                // Highlight correct answer
+                allBtns[qData.answer].classList.add('correct');
+                points = 0;
+                wrongAnswers++;
+                showFeedback(false, "Jawaban Kurang Tepat", qData.explanation, points);
+            }
+
+            finalizeAnswer(points);
+        }
+
+        function gradeOral(points) {
+            // Disable rubrics
+            const rubrics = document.querySelectorAll('.rubric-btn');
+            rubrics.forEach(b => b.disabled = true);
+            
+            const qData = questionsData[currentActiveBall.id - 1];
+            
+            let title = "";
+            let isPerfect = false;
+
+            if(points === 100) {
+                title = "Penilaian: Sangat Tepat";
+                isPerfect = true;
+                correctAnswers++;
+            } else if (points === 50) {
+                title = "Penilaian: Sebagian Benar";
+                isPerfect = true; // Anggap partial success sebagai hijau/biru
+            } else {
+                title = "Penilaian: Belum Tepat";
+                wrongAnswers++;
+            }
+
+            showFeedback(isPerfect, title, qData.explanation, points);
+            finalizeAnswer(points);
+        }
+
+        function showFeedback(isSuccess, title, explanation, points) {
+            const feedbackArea = document.getElementById('feedbackArea');
+            const feedbackTitle = document.getElementById('feedbackTitle');
+            const feedbackText = document.getElementById('feedbackText');
+            
+            feedbackArea.className = 'feedback-area active';
+            
+            if (points === 100) feedbackArea.classList.add('success');
+            else if (points === 50) feedbackArea.classList.add('info');
+            else feedbackArea.classList.add('error');
+
+            const icon = points === 100 ? '✅' : (points === 50 ? '⚠️' : '❌');
+            feedbackTitle.innerHTML = `${icon} ${title} <span style="margin-left:auto;">+${points} Poin</span>`;
+            feedbackText.innerHTML = `<strong>Pembahasan:</strong> ${explanation}`;
+            
+            document.getElementById('btnContinue').classList.add('active');
+        }
+
+        function finalizeAnswer(points) {
+            currentActiveBall.isAnswered = true;
+            answeredBalls++;
+            totalScore += points;
+            updateStats();
+        }
+
+        function closeModal() {
+            document.getElementById('questionModal').classList.remove('active');
+            
+            // Check win condition
+            if (answeredBalls >= totalBalls) {
+                setTimeout(showEndScreen, 500);
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('progressText').textContent = `${answeredBalls} / ${totalBalls}`;
+            document.getElementById('scoreText').textContent = totalScore;
+        }
+
+        function showEndScreen() {
+            document.getElementById('endScreen').classList.add('active');
+            document.getElementById('finalTotalScore').textContent = totalScore;
+            
+            const avg = Math.round(totalScore / totalBalls);
+            document.getElementById('finalAverage').textContent = avg;
+            
+            document.getElementById('finalCorrect').textContent = correctAnswers;
+            document.getElementById('finalWrong').textContent = totalBalls - correctAnswers;
+        }
+
+        // Mulai Game saat load
+        window.onload = () => {
+            initGame();
+        };
+
+    </script>
+</body>
+</html>
